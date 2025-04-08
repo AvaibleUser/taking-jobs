@@ -1,9 +1,9 @@
 from abc import ABC, abstractmethod
 
+from domain.dtos import Gene
+
 
 class Restriction(ABC):
-    _WEIGHT = 0.75 / 5
-
     @abstractmethod
-    def is_satisfied(self) -> float:
+    def gene_satisfies(self, gene: Gene) -> bool:
         pass

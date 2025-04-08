@@ -1,13 +1,13 @@
-from dataclasses import dataclass
+from attrs import field, frozen
 
-from domain.dtos import Chromosome
+from domain.dtos import Chromosome, Gene
 from domain.enums import Period
 from domain.models import Restriction
 
 
-@dataclass(frozen=True)
+@frozen
 class BetweenValidPeriods(Restriction):
-    chromosome: Chromosome
+    chromosome: Chromosome = field()
 
-    def is_satisfied(self) -> float:
-        return (self.chromosome.period in Period) * self._WEIGHT
+    def gene_satisfies(self, gene: Gene) -> bool:
+        return gene.period in Period

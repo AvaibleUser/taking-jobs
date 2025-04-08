@@ -1,17 +1,11 @@
-from dataclasses import dataclass
+from attrs import field, frozen
 
-from utils.toml import dict_to_toml
+from utils.toml import define
 
 
-@dataclass(frozen=True)
+@define
+@frozen
 class Classroom:
-    id: int
-    name: str
-    capacity: int | None = None
-
-    def __str__(self) -> str:
-        return dict_to_toml("classroom", {
-            "name": self.name,
-            "id": self.id,
-            "capacity": self.capacity,
-        })
+    id: int = field()
+    name: str = field()
+    capacity: int | None = field(default=None)

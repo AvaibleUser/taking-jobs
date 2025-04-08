@@ -1,36 +1,19 @@
-from dataclasses import dataclass
+from attrs import field, frozen
 
-from domain.dtos import Chromosome
+from domain.dtos import Chromosome, Gene
 from domain.models import Restriction
-from utils.memory import CON
 
 
-@dataclass(frozen=True)
+@frozen
 class NonOverlappingSemesterCourses(Restriction):
-    chromosome: Chromosome
+    chromosome: Chromosome = field()
 
-    def is_satisfied(self) -> float:
-        course = self.chromosome.course
+    def gene_satisfies(self, gene: Gene) -> bool:
+        course = gene.course.code
+        period = gene.period
 
-        if course.optional:
-            return self._WEIGHT
+        genes = self.chromosome.genes
+        genes = filter(lambda g: g.course.code == course, genes)
+        genes = filter(lambda g: g.period == period, genes)
 
-        courses_count = CON.query(
-            """
-            SELECT COUNT(*)
-            FROM course
-            WHERE code = $code
-                AND degree = $degree
-                AND semester = $semester
-                AND section != $section
-                AND optional = FALSE
-                AND active = TRUE;
-            """,
-            params={
-                "code": course.code,
-                "degree": course.degree,
-                "semester": course.semester,
-                "section": course.section,
-            }).first()[0]
-
-        return (courses_count < 2) * self._WEIGHT
+        return len(genes) < 2

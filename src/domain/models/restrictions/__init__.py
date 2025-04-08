@@ -1,5 +1,6 @@
 from .between_valid_periods import BetweenValidPeriods
 from .in_teacher_availabilities import InTeacherAvailabilities
+from .in_teacher_schedule import InTeacherSchedule
 from .non_overlapping_classrooms import NonOverlappingClassrooms
 from .non_overlapping_semester_courses import NonOverlappingSemesterCourses
 from .non_overlapping_teacher_courses import NonOverlappingTeacherSchedule

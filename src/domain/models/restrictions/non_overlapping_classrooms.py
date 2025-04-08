@@ -1,28 +1,19 @@
-from dataclasses import dataclass
+from attrs import field, frozen
 
-from domain.dtos import Chromosome
+from domain.dtos import Chromosome, Gene
 from domain.models import Restriction
-from utils.memory import CON
 
 
-@dataclass(frozen=True)
+@frozen
 class NonOverlappingClassrooms(Restriction):
-    chromosome: Chromosome
+    chromosome: Chromosome = field()
 
-    def is_satisfied(self) -> float:
-        classroom = self.chromosome.classroom
-        period = self.chromosome.period
+    def gene_satisfies(self, gene: Gene) -> bool:
+        classroom = gene.classroom.id
+        period = gene.period
 
-        classrooms_count = CON.query(
-            """
-            SELECT COUNT(*)
-            FROM chomosome
-            WHERE classroom = $classroom
-                AND period = $period;
-            """,
-            params={
-                "classroom": classroom,
-                "period": period,
-            }).first()[0]
+        genes = self.chromosome.genes
+        genes = filter(lambda g: g.classroom.id == classroom, genes)
+        genes = filter(lambda g: g.period == period, genes)
 
-        return (classrooms_count < 2) * self._WEIGHT
+        return len(genes) < 2

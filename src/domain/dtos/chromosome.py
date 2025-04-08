@@ -1,12 +1,16 @@
-from dataclasses import dataclass
+from typing import List
 
-from domain.dtos import Classroom, Course, Period, Teacher
+from attrs import field, frozen
+
+from domain.dtos import Gene
+from utils.toml import define
 
 
-@dataclass(frozen=True)
+@define
+@frozen
 class Chromosome:
-    classroom: Classroom
-    course: Course
-    teacher: Teacher
-    period: Period
-    score: float | None = None
+    id: int | None = field(default=None)
+    generation: int = field()
+    score: float | None = field(default=None)
+    active: bool = field(default=True)
+    genes: List[Gene] | None = field(factory=list, default=None)
