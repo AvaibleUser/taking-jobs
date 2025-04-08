@@ -9,3 +9,4 @@ class Chromosome:
     course: Course
     teacher: Teacher
     period: Period
+    score: float | None = None
