@@ -8,7 +8,7 @@ from utils.toml import define
 @define
 @frozen
 class Gene:
-    id: int | None = field(default=None)
+    id: int = field()
     classroom: Classroom = field()
     course: Course = field()
     teacher: Teacher = field()

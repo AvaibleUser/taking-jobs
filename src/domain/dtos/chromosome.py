@@ -9,7 +9,7 @@ from utils.toml import define
 @define
 @frozen
 class Chromosome:
-    id: int | None = field(default=None)
+    id: int = field()
     generation: int = field()
     score: float | None = field(default=None)
     active: bool = field(default=True)

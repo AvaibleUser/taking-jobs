@@ -15,11 +15,6 @@ __HEAVY_WEIGHT = 1.5
 
 
 def calculate_fitness_score(chromosome: Chromosome) -> float:
-    genes = chromosome.genes
-    if genes is None:
-        chromosome.score = 0
-        return 0
-
     restrictions: List[Restriction] = [
         BetweenValidPeriods(chromosome),
         InTeacherAvailabilities(chromosome),
@@ -32,12 +27,22 @@ def calculate_fitness_score(chromosome: Chromosome) -> float:
         ContinuousSemesterCourses(chromosome),
     ]
 
-    chromosome.score = sum(
+    genes = chromosome.genes
+    if genes is None:
+        chromosome.score = - (len(restrictions) * __HEAVY_WEIGHT +
+                              len(priorities) * __LIGHT_WEIGHT)
+        return chromosome.score
+
+    total_score = sum(
         __HEAVY_WEIGHT *
         sum(1 if r.gene_satisfies(g) else -1 for r in restrictions) +
         __LIGHT_WEIGHT *
         sum(1 if p.gene_satisfies(g) else -1 for p in priorities)
         for g in genes
     )
+    max_possible_score = (len(restrictions) * __HEAVY_WEIGHT +
+                          len(priorities) * __LIGHT_WEIGHT) * len(genes)
+
+    chromosome.score = total_score / max_possible_score
 
     return chromosome.score

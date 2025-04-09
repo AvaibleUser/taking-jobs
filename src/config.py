@@ -1,70 +1,85 @@
-from utils.memory import execute
+import duckdb as dd
 
 
-def config() -> None:
+def config() -> dd.DuckDBPyConnection:
+    con = dd.connect(':memory:')
+    dd.set_default_connection(con)
+
     __config_duckdb()
+    __config_classrooms()
+
+    return con
 
 
 def __config_duckdb() -> None:
-    execute("""
+    dd.execute("""
         CREATE TABLE classroom (
-            id INTEGER NOT NULL,
+            id INTEGER PRIMARY KEY,
             name VARCHAR NOT NULL,
-            capacity INTEGER,
-            PRIMARY KEY (id)
-        );
+            capacity INTEGER
+        )
         """)
 
-    execute("""
+    dd.execute("""
         CREATE TABLE course (
-            code INTEGER NOT NULL,
+            code INTEGER PRIMARY KEY,
             name VARCHAR NOT NULL,
             degree VARCHAR NOT NULL,
             semester INTEGER NOT NULL CHECK (semester BETWEEN 1 AND 10),
             section VARCHAR NOT NULL,
             optional BOOLEAN NOT NULL,
-            active BOOLEAN DEFAULT TRUE,
-            PRIMARY KEY (code)
-        );
+            active BOOLEAN DEFAULT TRUE
+        )
         """)
 
-    execute("""
+    dd.execute("""
         CREATE TABLE teacher (
-            personal_record INTEGER NOT NULL,
+            personal_record INTEGER PRIMARY KEY,
             name VARCHAR NOT NULL,
             check_in INTEGER NOT NULL,
             check_out INTEGER NOT NULL,
-            active BOOLEAN DEFAULT TRUE,
-            PRIMARY KEY (personal_record)
-        );
+            active BOOLEAN DEFAULT TRUE
+        )
         """)
 
-    execute("""
+    dd.execute("""
         CREATE TABLE teacher_course_available (
             teacher INTEGER REFERENCES teacher (personal_record),
             course INTEGER REFERENCES course (code),
             PRIMARY KEY (teacher, course)
-        );
+        )
         """)
 
-    execute("""
+    dd.execute("""
+        CREATE SEQUENCE ch_id START 1;
         CREATE TABLE chromosome (
-            id INTEGER INCREMENT,
+            id INTEGER DEFAULT NEXTVAL('ch_id'),
             generation INTEGER NOT NULL,
             score REAL,
             active BOOLEAN DEFAULT TRUE,
             PRIMARY KEY (id)
-        );
+        )
         """)
 
-    execute("""
+    dd.execute("""
+        CREATE SEQUENCE ge_id START 1;
         CREATE TABLE gene (
-            id INTEGER INCREMENT,
+            id INTEGER DEFAULT NEXTVAL('ge_id'),
             classroom INTEGER REFERENCES classroom (id),
             course INTEGER REFERENCES course (code),
             teacher INTEGER REFERENCES teacher (personal_record),
             period INTEGER NOT NULL CHECK (period BETWEEN 1 AND 10),
             chromosome INTEGER REFERENCES chromosome (id),
             PRIMARY KEY (id)
-        );
+        )
         """)
+
+
+def __config_classrooms() -> None:
+    df = dd.read_csv("data/salones.csv", header=True,
+                     null_padding=True, names=["name", "id"]).to_df()
+
+    df = df.reindex(columns=["id", "name"])
+    df.insert(2, "capacity", None)
+
+    dd.sql("SELECT * FROM df").insert_into("classroom")
