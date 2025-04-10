@@ -10,6 +10,7 @@ __population_size = 100
 __chromosome_len = 0
 __crossover_rate = 0.7
 __mutation_rate = 0.1
+__generation_threshold = 100
 
 
 def chromosome_len() -> int:
@@ -26,6 +27,10 @@ def crossover_rate() -> float:
 
 def mutation_rate() -> float:
     return __mutation_rate
+
+
+def generation_threshold() -> int:
+    return __generation_threshold
 
 
 def __generate_chromosome() -> Chromosome:
@@ -60,7 +65,11 @@ def __generate_chromosome() -> Chromosome:
     return Chromosome(id=chromosome_id, generation=0, genes=genes)
 
 
-def generate_initial_population(population_size: int, crossover_rate: float, mutation_rate: float) -> Population:
+def generate_initial_population(
+        population_size: int = population_size(),
+        crossover_rate: float = crossover_rate(),
+        mutation_rate: float = mutation_rate(),
+        generation_threshold: int = generation_threshold()) -> Population:
     dd.begin()
 
     global __population_size
@@ -71,6 +80,9 @@ def generate_initial_population(population_size: int, crossover_rate: float, mut
 
     global __mutation_rate
     __mutation_rate = mutation_rate
+
+    global __generation_threshold
+    __generation_threshold = generation_threshold
 
     global __chromosome_len
     __chromosome_len = dd.sql(
