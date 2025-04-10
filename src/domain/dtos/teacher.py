@@ -1,3 +1,5 @@
+from typing import List
+
 from attrs import field, frozen
 
 from domain.enums import Period
@@ -12,4 +14,4 @@ class Teacher:
     check_in: Period = field()
     check_out: Period = field()
     active: bool = field(default=True)
-    available_courses: list[int] | None = field(default=None)
+    available_courses: List[int] = field(factory=list)

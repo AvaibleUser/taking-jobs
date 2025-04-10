@@ -1,5 +1,7 @@
 import duckdb as dd
 
+from domain.enums import Period
+
 
 def config() -> dd.DuckDBPyConnection:
     con = dd.connect(':memory:')
@@ -7,6 +9,9 @@ def config() -> dd.DuckDBPyConnection:
 
     __config_duckdb()
     __config_classrooms()
+    __config_courses()
+    __config_teachers()
+    __config_teacher_courses()
 
     return con
 
@@ -36,8 +41,8 @@ def __config_duckdb() -> None:
         CREATE TABLE teacher (
             personal_record INTEGER PRIMARY KEY,
             name VARCHAR NOT NULL,
-            check_in INTEGER NOT NULL,
-            check_out INTEGER NOT NULL,
+            check_in INTEGER NOT NULL CHECK (check_in BETWEEN 1 AND 10),
+            check_out INTEGER NOT NULL CHECK (check_out BETWEEN 1 AND 10),
             active BOOLEAN DEFAULT TRUE
         )
         """)
@@ -57,8 +62,8 @@ def __config_duckdb() -> None:
             generation INTEGER NOT NULL,
             score REAL,
             active BOOLEAN DEFAULT TRUE,
-            parent1 INTEGER REFERENCES chromosome (id) NULL,
-            parent2 INTEGER REFERENCES chromosome (id) NULL,
+            parent1 INTEGER NULL,
+            parent2 INTEGER NULL,
             PRIMARY KEY (id)
         )
         """)
@@ -67,9 +72,9 @@ def __config_duckdb() -> None:
         CREATE SEQUENCE ge_id START 1;
         CREATE TABLE gene (
             id INTEGER DEFAULT NEXTVAL('ge_id'),
-            classroom INTEGER REFERENCES classroom (id),
-            course INTEGER REFERENCES course (code),
-            teacher INTEGER REFERENCES teacher (personal_record),
+            classroom INTEGER,
+            course INTEGER,
+            teacher INTEGER,
             period INTEGER NOT NULL CHECK (period BETWEEN 1 AND 10),
             PRIMARY KEY (id)
         )
@@ -77,8 +82,8 @@ def __config_duckdb() -> None:
 
     dd.execute("""
         CREATE TABLE chromosome_gene (
-            chromosome INTEGER REFERENCES chromosome (id),
-            gene INTEGER REFERENCES gene (id),
+            chromosome INTEGER,
+            gene INTEGER,
             PRIMARY KEY (chromosome, gene)
         )
         """)
@@ -92,3 +97,40 @@ def __config_classrooms() -> None:
     df.insert(2, "capacity", None)
 
     dd.sql("SELECT * FROM df").insert_into("classroom")
+
+
+def __config_courses() -> None:
+    df = dd.read_csv("data/cursos.csv", header=True,
+                     null_padding=True, names=["name", "code", "degree", "semester", "section", "optional"]).to_df()
+
+    df = df.reindex(columns=["code", "name", "degree",
+                    "semester", "section", "optional"])
+
+    df.insert(6, "active", True)
+    if df.optional.dtype != "bool":
+        df.loc[df.optional.eq("optativo"), "optional"] = True
+        df.loc[df.optional.eq("obligatorio"), "optional"] = False
+
+    dd.sql("SELECT * FROM df").insert_into("course")
+
+
+def __config_teachers() -> None:
+    df = dd.read_csv("data/docentes.csv", header=True,
+                     null_padding=True, names=["name", "personal_record", "check_in", "check_out"]).to_df()
+
+    df = df.reindex(columns=["personal_record",
+                    "name", "check_in", "check_out"])
+
+    df.insert(4, "active", True)
+    if df.check_in.dtype != "int":
+        df.check_in = df.check_in.apply(Period.from_time)
+
+    if df.check_out.dtype != "int":
+        df.check_out = df.check_out.apply(Period.from_time)
+
+    dd.sql("SELECT * FROM df").insert_into("teacher")
+
+
+def __config_teacher_courses() -> None:
+    dd.read_csv("data/relacion.csv", header=True, null_padding=True,
+                names=["teacher", "course"]).insert_into("teacher_course_available")

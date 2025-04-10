@@ -1,6 +1,5 @@
 from typing import List
 
-from algorithm.initialize import generation_threshold
 from domain.dtos import Chromosome
 from domain.models import Priority, Restriction
 from domain.models.priorities import ContinuousSemesterCourses
@@ -12,14 +11,14 @@ from domain.models.restrictions import (BetweenValidPeriods,
                                         NonOverlappingTeacherSchedule)
 from domain.utils.genetic import Population
 
-__LIGHT_WEIGHT = 0.5
-__HEAVY_WEIGHT = 1.5
+__LIGHT_WEIGHT = 1
+__HEAVY_WEIGHT = 5
 __first: bool = True
 __restrictions: int = 0
 __priorities: int = 0
 
 
-def calculate_fitness_score(chromosome: Chromosome) -> float:
+def __calculate_fitness_score(chromosome: Chromosome) -> float:
     restrictions: List[Restriction] = [
         BetweenValidPeriods(chromosome),
         InTeacherAvailabilities(chromosome),
@@ -31,6 +30,8 @@ def calculate_fitness_score(chromosome: Chromosome) -> float:
     priorities: List[Priority] = [
         ContinuousSemesterCourses(chromosome),
     ]
+
+    global __first
     if __first:
         __first = False
         global __restrictions
@@ -40,13 +41,14 @@ def calculate_fitness_score(chromosome: Chromosome) -> float:
 
     genes = chromosome.genes
 
-    total_score = sum(
+    total_score = sum(map(
+        lambda g:
         __HEAVY_WEIGHT *
-        sum(1 if r.gene_satisfies(g) else -1 for r in restrictions) +
+        sum(map(lambda r: 1 if r.gene_satisfies(g) else - __LIGHT_WEIGHT - 1, restrictions)) +
         __LIGHT_WEIGHT *
-        sum(1 if p.gene_satisfies(g) else -1 for p in priorities)
-        for g in genes
-    )
+        sum(map(lambda p: 1 if p.gene_satisfies(g) else -1, priorities)),
+        genes
+    ))
     max_possible_score = (len(restrictions) * __HEAVY_WEIGHT +
                           len(priorities) * __LIGHT_WEIGHT) * len(genes)
 
@@ -55,17 +57,18 @@ def calculate_fitness_score(chromosome: Chromosome) -> float:
     return chromosome.score
 
 
-def ftiness(population: Population) -> float:
+def fitness(population: Population) -> float:
     global __first
     __first = True
-    avg_score = sum(map(calculate_fitness_score, population)) / len(population)
+
+    avg_score = sum(map(__calculate_fitness_score,
+                        population)) / len(population)
     return avg_score
 
 
-def check_termination_criteria(population: Population, generation_threshold: int = generation_threshold()) -> bool:
-    max_generation = max(map(lambda c: c.generation, population))
-
-    if max_generation > generation_threshold:
+def check_termination_criteria(population: Population, generation: int, generation_threshold: int) -> bool:
+    if generation > generation_threshold:
         return True
 
-    return any(map(lambda c: c.score == 1, population))
+    fitness(population)
+    return any(map(lambda c: c.score >= 0.98, population))

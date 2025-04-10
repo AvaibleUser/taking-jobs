@@ -9,11 +9,9 @@ class InTeacherSchedule(Restriction):
     chromosome: Chromosome = field()
 
     def gene_satisfies(self, gene: Gene) -> bool:
-        teacher = gene.teacher.personal_record
-        schedule = {gene.teacher.check_in, gene.teacher.check_out}
+        satisfied = gene.teacher.check_in <= gene.period < gene.teacher.check_out
 
-        genes = self.chromosome.genes
-        genes = filter(lambda g: g.teacher.personal_record == teacher, genes)
-        genes = filter(lambda g: g.period in schedule, genes)
+        if not satisfied:
+            gene.failed_in.add(self.__class__.__name__)
 
-        return len(genes) < 1
+        return satisfied

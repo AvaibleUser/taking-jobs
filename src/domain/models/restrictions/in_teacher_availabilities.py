@@ -9,4 +9,9 @@ class InTeacherAvailabilities(Restriction):
     chromosome: Chromosome = field()
 
     def gene_satisfies(self, gene: Gene) -> bool:
-        return gene.course.code in gene.teacher.available_courses
+        satisfied = gene.course.code in gene.teacher.available_courses
+
+        if not satisfied:
+            gene.failed_in.add(self.__class__.__name__)
+
+        return satisfied

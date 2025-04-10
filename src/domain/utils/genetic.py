@@ -14,17 +14,11 @@ class Parents:
 
 
 @define
-class Children:
-    child1: Chromosome = field()
-    child2: Chromosome = field()
-
-
-@define
 class Parents:
     parent1: Chromosome = field()
     parent2: Chromosome = field()
 
 
-CrossoverMethod = Callable[[Parents], Children]
+CrossoverMethod = Callable[[Parents], Population]
 
 MutateMethod = Callable[[Chromosome], None]

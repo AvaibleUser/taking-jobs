@@ -3,7 +3,7 @@ from typing import List
 import attrs
 from attrs import field
 
-from domain.dtos import Gene
+from domain.dtos.gene import Gene
 from utils.toml import define
 
 
@@ -12,6 +12,6 @@ from utils.toml import define
 class Chromosome:
     id: int = field()
     generation: int = field()
-    score: float | None = field(default=None)
+    score: float = field(default=0)
     active: bool = field(default=True)
     genes: List[Gene] = field(factory=list)

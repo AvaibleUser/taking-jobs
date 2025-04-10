@@ -1,7 +1,11 @@
+from typing import Set
+
 import attrs
 from attrs import field
 
-from domain.dtos import Classroom, Course, Teacher
+from domain.dtos.classroom import Classroom
+from domain.dtos.course import Course
+from domain.dtos.teacher import Teacher
 from domain.enums import Period
 from utils.toml import define
 
@@ -14,3 +18,4 @@ class Gene:
     course: Course = field()
     teacher: Teacher = field()
     period: Period = field()
+    failed_in: Set[int] = field(factory=set)

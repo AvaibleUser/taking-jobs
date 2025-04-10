@@ -35,32 +35,49 @@ def generation_threshold() -> int:
 
 def __generate_chromosome() -> Chromosome:
     classrooms_df = dd.sql("SELECT * FROM classroom").to_df()
-    classrooms = (Classroom(**row) for row in classrooms_df.to_dict("records"))
+    classrooms = tuple(Classroom(**row)
+                       for row in classrooms_df.to_dict("records"))
 
     courses_df = dd.sql("SELECT * FROM course WHERE active=TRUE").to_df()
     courses_df = courses_df.sample(frac=1).reset_index(drop=True)
-    courses = (Course(**row) for row in courses_df.to_dict("records"))
+    courses = tuple(Course(**row) for row in courses_df.to_dict("records"))
 
-    teachers_df = dd.sql("SELECT * FROM teacher WHERE active=TRUE").to_df()
-    teachers = (Teacher(**row) for row in teachers_df.to_dict("records"))
+    teachers_df = dd.sql(
+        """
+        SELECT t.*, tca.course AS available_courses
+        FROM teacher t
+            JOIN teacher_course_available tca
+                ON t.personal_record = tca.teacher
+        WHERE active = TRUE
+        """).to_df()
+    teachers_df = teachers_df.groupby("personal_record", as_index=False).agg(
+        {"name": "first", "check_in": "min", "check_out": "max", "available_courses": list}).reset_index(drop=True)
+    teachers = tuple(Teacher(**row) for row in teachers_df.to_dict("records"))
 
-    periods = list(Period)
+    periods = tuple(Period)
 
     dd.execute("INSERT INTO chromosome (generation) VALUES (0)")
-    chromosome_id = dd.sql("SELECT MAX(id) FROM chromosome").first()[0]
+    chromosome_id = dd.sql("SELECT MAX(id) FROM chromosome").fetchall()[0][0]
 
     dd.executemany(
-        """
-        INSERT INTO gene (classroom, course, teacher, period) VALUES (?, ?, ?, ?);
-        INSERT INTO chromosome_gene (chromosome, gene) SELECT ?, MAX(id) FROM gene;
-        """,
-        [(choice(classrooms).id, c.code, choice(
-            teachers).personal_record, choice(periods), chromosome_id)
-         for c in courses])
+        "INSERT INTO gene (classroom, course, teacher, period) VALUES (?, ?, ?, ?)",
+        ((choice(classrooms).id, c.code, choice(teachers).personal_record, choice(periods)) for c in courses))
+
+    dd.execute(
+        "INSERT INTO chromosome_gene SELECT ? AS chromosome, id AS gene FROM gene g ORDER BY id DESC LIMIT ?",
+        (chromosome_id, len(courses)))
 
     genes_df = dd.sql(
-        "SELECT * FROM gene WHERE chromosome = ?", chromosome_id).to_df()
-    genes = (Gene(**row) for row in genes_df.to_dict("records"))
+        "SELECT g.* FROM gene g JOIN chromosome_gene cg ON g.id = cg.gene WHERE cg.chromosome = ?",
+        params=[chromosome_id]).to_df()
+    genes = list(Gene(
+        id=row["id"],
+        classroom=next(filter(lambda c: c.id == row["classroom"], classrooms)),
+        course=next(filter(lambda c: c.code == row["course"], courses)),
+        teacher=next(filter(lambda t: t.personal_record ==
+                     row["teacher"], teachers)),
+        period=next(filter(lambda p: p == row["period"], periods))
+    ) for row in genes_df.to_dict("records"))
 
     return Chromosome(id=chromosome_id, generation=0, genes=genes)
 
@@ -86,12 +103,12 @@ def generate_initial_population(
 
     global __chromosome_len
     __chromosome_len = dd.sql(
-        "SELECT COUNT(*) FROM course WHERE active=TRUE").first()[0]
+        "SELECT COUNT(*) FROM course WHERE active=TRUE").fetchall()[0][0]
 
     dd.execute("DELETE FROM chromosome WHERE 1=1")
     dd.execute("DELETE FROM gene WHERE 1=1")
 
-    population = (__generate_chromosome() for _ in range(population_size))
+    population = list(__generate_chromosome() for _ in range(population_size))
 
     dd.commit()
 

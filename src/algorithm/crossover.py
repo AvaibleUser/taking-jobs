@@ -1,14 +1,14 @@
+from functools import partial
 from random import randint, shuffle
 from typing import Tuple
 
 import duckdb as dd
 
-from algorithm.initialize import crossover_rate
 from domain.dtos import Chromosome, Gene
-from domain.utils.genetic import Children, CrossoverMethod, Parents, Population
+from domain.utils.genetic import CrossoverMethod, Parents, Population
 
 
-def uniform_crossover(pair: Parents, swap_prob: float = 0.5) -> Children:
+def uniform_crossover(pair: Parents, generation: int, swap_prob: float = 0.5) -> Population:
     def swap(x: Gene, y: Gene):
         return (y, x) if randint(0, 1) < swap_prob else (x, y)
 
@@ -18,32 +18,44 @@ def uniform_crossover(pair: Parents, swap_prob: float = 0.5) -> Children:
     generation = pair.parent1.generation + 1
     dd.executemany(
         "INSERT INTO chromosome (generation, parent1, parent2) VALUES (?, ?, ?)",
-        [[generation, pair.parent1, pair.parent2], [generation, pair.parent2, pair.parent1]])
+        [[generation, pair.parent1.id, pair.parent2.id], [generation, pair.parent2.id, pair.parent1.id]])
 
-    child1_id = dd.sql("SELECT MAX(id) FROM chromosome").first()[0]
+    child1_id = dd.sql("SELECT MAX(id) FROM chromosome").fetchall()[0][0]
     child2_id = child1_id - 1
 
     dd.executemany(
-        """
-        INSERT INTO gene (classroom, course, teacher, period) VALUES (?, ?, ?, ?);
-        INSERT INTO chromosome_gene (chromosome, gene) SELECT ?, MAX(id) FROM gene;
-        """,
-        [(g.classroom, g.course, g.teacher, g.period, child1_id) for g in genes1].extend(
-            (g.classroom, g.course, g.teacher, g.period, child2_id) for g in genes2))
+        "INSERT INTO gene (classroom, course, teacher, period) VALUES (?, ?, ?, ?)",
+        [(g.classroom.id, g.course.code, g.teacher.personal_record, g.period) for g in genes1])
+
+    dd.execute(
+        "INSERT INTO chromosome_gene SELECT ? AS chromosome, id AS gene FROM gene g ORDER BY id DESC LIMIT ?",
+        (child1_id, len(genes1)))
+
+    dd.executemany(
+        "INSERT INTO gene (classroom, course, teacher, period) VALUES (?, ?, ?, ?)",
+        [(g.classroom.id, g.course.code, g.teacher.personal_record, g.period) for g in genes2])
+
+    dd.execute(
+        "INSERT INTO chromosome_gene SELECT ? AS chromosome, id AS gene FROM gene g ORDER BY id DESC LIMIT ?",
+        (child2_id, len(genes2)))
 
     genes1_df = dd.sql(
-        "SELECT * FROM gene WHERE chromosome = ?", child1_id).to_df()
-    genes1 = (Gene(**row) for row in genes1_df.to_dict("records"))
+        "SELECT g.id FROM gene g JOIN chromosome_gene cg ON g.id = cg.gene WHERE cg.chromosome = ?",
+        params=[child1_id]).to_df()
+    genes1 = list(Gene(id, gene.classroom, gene.course, gene.teacher, gene.period)
+                  for id, gene in zip(genes1_df.id.to_list(), genes1))
 
     genes2_df = dd.sql(
-        "SELECT * FROM gene WHERE chromosome = ?", child2_id).to_df()
-    genes2 = (Gene(**row) for row in genes2_df.to_dict("records"))
+        "SELECT g.id FROM gene g JOIN chromosome_gene cg ON g.id = cg.gene WHERE cg.chromosome = ?",
+        params=[child2_id]).to_df()
+    genes2 = list(Gene(id, gene.classroom, gene.course, gene.teacher, gene.period)
+                  for id, gene in zip(genes2_df.id.to_list(), genes2))
 
-    return Children(child1=Chromosome(id=child1_id, generation=generation, genes=genes1),
-                    child2=Chromosome(id=child2_id, generation=generation, genes=genes2))
+    return (Chromosome(id=child1_id, generation=generation, genes=genes1),
+            Chromosome(id=child2_id, generation=generation, genes=genes2))
 
 
-def crossover(population: Population, crossover_rate: float = crossover_rate(), method: CrossoverMethod = uniform_crossover) -> Tuple[Population, Population]:
+def crossover(population: Population, crossover_rate: float, generation: int, method: CrossoverMethod = uniform_crossover) -> Tuple[Population, Population]:
     parents = list(population)
     shuffle(parents)
     division_point = int(len(parents) * crossover_rate)
@@ -52,4 +64,11 @@ def crossover(population: Population, crossover_rate: float = crossover_rate(), 
     parents = (Parents(parent1=p1, parent2=p2)
                for p1, p2 in zip(parents[::2], parents[1::2]))
 
-    return map(method, parents), rest
+    method = partial(method, generation=generation)
+    dd.begin()
+    children = map(method, parents)
+    children = list(zip(*children))
+    children = list(children[0] + children[1])
+    dd.commit()
+
+    return children, rest
