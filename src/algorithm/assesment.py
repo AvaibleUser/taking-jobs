@@ -28,10 +28,6 @@ def calculate_fitness_score(chromosome: Chromosome) -> float:
     ]
 
     genes = chromosome.genes
-    if genes is None:
-        chromosome.score = - (len(restrictions) * __HEAVY_WEIGHT +
-                              len(priorities) * __LIGHT_WEIGHT)
-        return chromosome.score
 
     total_score = sum(
         __HEAVY_WEIGHT *

@@ -14,4 +14,4 @@ class Chromosome:
     generation: int = field()
     score: float | None = field(default=None)
     active: bool = field(default=True)
-    genes: List[Gene] | None = field(factory=list, default=None)
+    genes: List[Gene] = field(factory=list)
