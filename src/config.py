@@ -57,6 +57,8 @@ def __config_duckdb() -> None:
             generation INTEGER NOT NULL,
             score REAL,
             active BOOLEAN DEFAULT TRUE,
+            parent1 INTEGER REFERENCES chromosome (id) NULL,
+            parent2 INTEGER REFERENCES chromosome (id) NULL,
             PRIMARY KEY (id)
         )
         """)
@@ -69,8 +71,15 @@ def __config_duckdb() -> None:
             course INTEGER REFERENCES course (code),
             teacher INTEGER REFERENCES teacher (personal_record),
             period INTEGER NOT NULL CHECK (period BETWEEN 1 AND 10),
-            chromosome INTEGER REFERENCES chromosome (id),
             PRIMARY KEY (id)
+        )
+        """)
+
+    dd.execute("""
+        CREATE TABLE chromosome_gene (
+            chromosome INTEGER REFERENCES chromosome (id),
+            gene INTEGER REFERENCES gene (id),
+            PRIMARY KEY (chromosome, gene)
         )
         """)
 

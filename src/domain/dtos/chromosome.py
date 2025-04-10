@@ -1,13 +1,14 @@
 from typing import List
 
-from attrs import field, frozen
+import attrs
+from attrs import field
 
 from domain.dtos import Gene
 from utils.toml import define
 
 
 @define
-@frozen
+@attrs.define
 class Chromosome:
     id: int = field()
     generation: int = field()

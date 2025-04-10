@@ -1,4 +1,5 @@
-from attrs import field, frozen
+import attrs
+from attrs import field
 
 from domain.dtos import Classroom, Course, Teacher
 from domain.enums import Period
@@ -6,7 +7,7 @@ from utils.toml import define
 
 
 @define
-@frozen
+@attrs.define
 class Gene:
     id: int = field()
     classroom: Classroom = field()

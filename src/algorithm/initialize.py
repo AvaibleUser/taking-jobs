@@ -1,14 +1,14 @@
 from random import choice
-from typing import Iterable
 
 import duckdb as dd
 
 from domain.dtos import Chromosome, Classroom, Course, Gene, Teacher
 from domain.enums import Period
+from domain.utils.genetic import Population
 
 __population_size = 100
 __chromosome_len = 0
-__crossover_rate = 0.5
+__crossover_rate = 0.7
 __mutation_rate = 0.1
 
 
@@ -44,19 +44,23 @@ def __generate_chromosome() -> Chromosome:
     dd.execute("INSERT INTO chromosome (generation) VALUES (0)")
     chromosome_id = dd.sql("SELECT MAX(id) FROM chromosome").first()[0]
 
-    dd.executemany("INSERT INTO gene (classroom, course, teacher, period, chromosome) VALUES (?, ?, ?, ?, ?)", [
-                   (choice(classrooms).id, c.code, choice(
-                       teachers).personal_record, choice(periods), chromosome_id)
-                   for c in courses])
+    dd.executemany(
+        """
+        INSERT INTO gene (classroom, course, teacher, period) VALUES (?, ?, ?, ?);
+        INSERT INTO chromosome_gene (chromosome, gene) SELECT ?, MAX(id) FROM gene;
+        """,
+        [(choice(classrooms).id, c.code, choice(
+            teachers).personal_record, choice(periods), chromosome_id)
+         for c in courses])
 
     genes_df = dd.sql(
         "SELECT * FROM gene WHERE chromosome = ?", chromosome_id).to_df()
     genes = (Gene(**row) for row in genes_df.to_dict("records"))
 
-    return Chromosome(id=chromosome_id, generation=0, score=None, active=True, genes=genes)
+    return Chromosome(id=chromosome_id, generation=0, genes=genes)
 
 
-def generate_initial_population(population_size: int, crossover_rate: float, mutation_rate: float) -> Iterable[Chromosome]:
+def generate_initial_population(population_size: int, crossover_rate: float, mutation_rate: float) -> Population:
     dd.begin()
 
     global __population_size
@@ -69,7 +73,8 @@ def generate_initial_population(population_size: int, crossover_rate: float, mut
     __mutation_rate = mutation_rate
 
     global __chromosome_len
-    __chromosome_len = dd.sql("SELECT COUNT(*) FROM course").first()[0]
+    __chromosome_len = dd.sql(
+        "SELECT COUNT(*) FROM course WHERE active=TRUE").first()[0]
 
     dd.execute("DELETE FROM chromosome WHERE 1=1")
     dd.execute("DELETE FROM gene WHERE 1=1")
