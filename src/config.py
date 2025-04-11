@@ -49,8 +49,8 @@ def __config_duckdb() -> None:
 
     dd.execute("""
         CREATE TABLE teacher_course_available (
-            teacher INTEGER REFERENCES teacher (personal_record),
-            course INTEGER REFERENCES course (code),
+            teacher INTEGER,
+            course INTEGER,
             PRIMARY KEY (teacher, course)
         )
         """)
@@ -123,10 +123,10 @@ def __config_teachers() -> None:
 
     df.insert(4, "active", True)
     if df.check_in.dtype != "int":
-        df.check_in = df.check_in.apply(Period.from_time)
+        df.check_in = df.check_in.apply(Period.to_check_in)
 
     if df.check_out.dtype != "int":
-        df.check_out = df.check_out.apply(Period.from_time)
+        df.check_out = df.check_out.apply(Period.to_check_out)
 
     dd.sql("SELECT * FROM df").insert_into("teacher")
 

@@ -66,9 +66,9 @@ def fitness(population: Population) -> float:
     return avg_score
 
 
-def check_termination_criteria(population: Population, generation: int, generation_threshold: int) -> bool:
+def check_termination_criteria(population: Population, generation: int, generation_threshold: int, fitness_objective: float) -> bool:
     if generation > generation_threshold:
         return True
 
     fitness(population)
-    return any(map(lambda c: c.score >= 0.98, population))
+    return any(map(lambda c: c.score >= fitness_objective, population))

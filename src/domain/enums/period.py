@@ -15,7 +15,7 @@ class Period(IntEnum):
     TEN_PAST_NINE = 10
 
     @classmethod
-    def from_time(cls, actual: time) -> "Period":
+    def to_check_in(cls, actual: time) -> "Period":
         match True:
             case _ if actual < time(13, 40):
                 return cls.TWENTY_TO_TWO
@@ -37,3 +37,52 @@ class Period(IntEnum):
                 return cls.TWENTY_PAST_EIGHT
             case _:
                 return cls.TEN_PAST_NINE
+
+    @classmethod
+    def to_check_out(cls, actual: time) -> "Period":
+        match True:
+            case _ if actual > time(21, 10):
+                return cls.TEN_PAST_NINE
+            case _ if actual > time(20, 20):
+                return cls.TWENTY_PAST_EIGHT
+            case _ if actual > time(19, 30):
+                return cls.HALF_PAST_SEVEN
+            case _ if actual > time(18, 40):
+                return cls.TWENTY_TO_SEVEN
+            case _ if actual > time(17, 50):
+                return cls.TEN_TO_SIX
+            case _ if actual > time(17, 0):
+                return cls.FIVE_O_CLOCK
+            case _ if actual > time(16, 10):
+                return cls.TEN_PAST_FOUR
+            case _ if actual > time(15, 20):
+                return cls.TWENTY_PAST_THREE
+            case _ if actual > time(14, 30):
+                return cls.HALF_PAST_TWO
+            case _:
+                return cls.TWENTY_TO_TWO
+            
+
+    @classmethod
+    def to_time(cls, actual: "Period") -> time:
+        match actual:
+            case 1:
+                return time(13, 40)
+            case 2:
+                return time(14, 30)
+            case 3:
+                return time(15, 20)
+            case 4:
+                return time(16, 10)
+            case 5:
+                return time(17, 0)
+            case 6:
+                return time(17, 50)
+            case 7:
+                return time(18, 40)
+            case 8:
+                return time(19, 30)
+            case 9:
+                return time(20, 20)
+            case 10:
+                return time(21, 10)
