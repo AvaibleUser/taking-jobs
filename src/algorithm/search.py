@@ -80,7 +80,8 @@ def genetic_algorithm(
         conflicts.append(
             sum(map(lambda c: sum(map(lambda g: len(g.failed_in), c.genes)), population)))
 
-        progress(min(population[-1].score, generation / generation_threshold))
+        progress(sum(population[-1].score,
+                 generation / generation_threshold) / 2)
         duration += - start + (start := time.time())
 
     final_population = sorted(population, key=lambda c: c.score, reverse=True)

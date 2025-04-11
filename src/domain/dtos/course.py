@@ -13,4 +13,5 @@ class Course:
     semester: Semester = field()
     section: str = field()
     optional: bool = field()
+    classroom: int | None = field(default=None)
     active: bool = field(default=True)

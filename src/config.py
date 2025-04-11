@@ -33,6 +33,7 @@ def __config_duckdb() -> None:
             semester INTEGER NOT NULL CHECK (semester BETWEEN 1 AND 10),
             section VARCHAR NOT NULL,
             optional BOOLEAN NOT NULL,
+            classroom INTEGER,
             active BOOLEAN DEFAULT TRUE
         )
         """)
@@ -106,7 +107,8 @@ def __config_courses() -> None:
     df = df.reindex(columns=["code", "name", "degree",
                     "semester", "section", "optional"])
 
-    df.insert(6, "active", True)
+    df.insert(6, "classroom", None)
+    df.insert(7, "active", True)
     if df.optional.dtype != "bool":
         df.loc[df.optional.eq("optativo"), "optional"] = True
         df.loc[df.optional.eq("obligatorio"), "optional"] = False

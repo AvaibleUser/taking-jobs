@@ -391,7 +391,8 @@ class ScheduleGUI(tk.Tk):
                 df = df.reindex(
                     columns=["code", "name", "degree", "semester", "section", "optional"])
 
-                df.insert(6, "active", True)
+                df.insert(6, "classroom", None)
+                df.insert(7, "active", True)
                 if df.optional.dtype != "bool":
                     df.loc[df.optional.eq("optativo"), "optional"] = True
                     df.loc[df.optional.eq("obligatorio"), "optional"] = False

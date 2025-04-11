@@ -3,7 +3,8 @@ from typing import List
 from domain.dtos import Chromosome
 from domain.models import Priority, Restriction
 from domain.models.priorities import ContinuousSemesterCourses
-from domain.models.restrictions import (BetweenValidPeriods,
+from domain.models.restrictions import (AlreadySelectedClassroom,
+                                        BetweenValidPeriods,
                                         InTeacherAvailabilities,
                                         InTeacherSchedule,
                                         NonOverlappingClassrooms,
@@ -20,6 +21,7 @@ __priorities: int = 0
 
 def __calculate_fitness_score(chromosome: Chromosome) -> float:
     restrictions: List[Restriction] = [
+        AlreadySelectedClassroom(chromosome),
         BetweenValidPeriods(chromosome),
         InTeacherAvailabilities(chromosome),
         InTeacherSchedule(chromosome),
@@ -71,4 +73,4 @@ def check_termination_criteria(population: Population, generation: int, generati
         return True
 
     fitness(population)
-    return any(map(lambda c: c.score >= fitness_objective, population))
+    return any(map(lambda c: c.score >= 1 or (c.generation + 25 > generation and c.score >= fitness_objective), population))

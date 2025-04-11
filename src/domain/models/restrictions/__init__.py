@@ -1,3 +1,4 @@
+from .already_selected_classroom import AlreadySelectedClassroom
 from .between_valid_periods import BetweenValidPeriods
 from .in_teacher_availabilities import InTeacherAvailabilities
 from .in_teacher_schedule import InTeacherSchedule
