@@ -53,7 +53,7 @@ class ScheduleGUI(tk.Tk):
         relations = dd.sql("SELECT * FROM teacher_course_available").fetchall()
 
         courses = list(map(lambda c: (c[0], c[1], c[2], c[3], c[4], "Opcional" if c[5]
-                       else "Obligatorio", "Si" if c[6] else "Inactivo"), courses))
+                       else "Obligatorio", "" if c[6] is None else c[6], "Si" if c[7] else "Inactivo"), courses))
         classrooms = list(
             map(lambda c: (c[0], c[1], c[2] or "No definido"), classrooms))
         teachers = list(map(lambda t: (t[0], t[1], Period.to_time(
@@ -117,11 +117,11 @@ class ScheduleGUI(tk.Tk):
 
         course_frame = ttk.Frame(notebook)
         self.create_table_management(course_frame, "Cursos",
-                                     ["Código", "Nombre", "Carrera", "Semestre", "Seccion", "Tipo", "Activo"], courses)
+                                     ["Código", "Nombre", "Carrera", "Semestre", "Seccion", "Tipo", "Clase especifica", "Activo"], courses)
 
         classroom_frame = ttk.Frame(notebook)
         self.create_table_management(classroom_frame, "Salones",
-                                     ["Identificador", "Nombre", "Capacidad"], classrooms, with_edit=False)
+                                     ["Identificador", "Nombre", "Capacidad"], classrooms, with_toggle=False)
 
         teacher_frame = ttk.Frame(notebook)
         self.create_table_management(teacher_frame, "Docentes",
@@ -129,7 +129,7 @@ class ScheduleGUI(tk.Tk):
 
         relation_frame = ttk.Frame(notebook)
         self.create_table_management(relation_frame, "Cursos que puede dar el docente",
-                                     ["Docente", "Curso"], relations, with_edit=False)
+                                     ["Docente", "Curso"], relations, with_toggle=False, with_edit=False)
 
         notebook.add(course_frame, text="Cursos")
         notebook.add(classroom_frame, text="Salones")
@@ -144,7 +144,7 @@ class ScheduleGUI(tk.Tk):
                    command=partial(self.export_csv, title=notebook.tab(notebook.select(), "text"))).pack(side=tk.LEFT, padx=5)
         buttons_frame.pack(pady=10)
 
-    def create_table_management(self, parent, title, columns, data, with_edit=True):
+    def create_table_management(self, parent, title, columns, data, with_toggle=True, with_edit=True):
         frame = ttk.LabelFrame(parent, text=title)
         frame.pack(expand=True, fill='both', padx=10, pady=10)
 
@@ -165,9 +165,12 @@ class ScheduleGUI(tk.Tk):
                    command=lambda: self.show_form(title, tree)).pack(side=tk.LEFT, padx=2)
         ttk.Button(buttons_frame, text="Eliminar",
                    command=lambda: self.delete_item(tree, title)).pack(side=tk.LEFT, padx=2)
-        if with_edit:
+        if with_toggle:
             ttk.Button(buttons_frame, text="Activar/Desactivar",
-                       command=lambda: self.edit_item(tree, title)).pack(side=tk.LEFT, padx=2)
+                       command=lambda: self.toggle_active_item(tree, title)).pack(side=tk.LEFT, padx=2)
+        if with_edit:
+            ttk.Button(buttons_frame, text="Editar",
+                       command=lambda: self.show_form(title, tree, editar=True)).pack(side=tk.LEFT, padx=2)
 
         tree.grid(row=0, column=0, sticky='nsew')
         vsb.grid(row=0, column=1, sticky='ns')
@@ -226,7 +229,7 @@ class ScheduleGUI(tk.Tk):
         window.title(f"{"Agregar" if not editar else "Editar"} {type}")
 
         fields = {
-            "Cursos": ["Código", "Nombre", "Carrera", "Semestre", "Seccion", "Tipo"],
+            "Cursos": ["Código", "Nombre", "Carrera", "Semestre", "Seccion", "Tipo", "Salon especifico"],
             "Salones": ["ID", "Nombre"],
             "Docentes": ["Registro", "Nombre", "Hora Entrada", "Hora Salida"],
             "Cursos que puede dar el docente": ["Registro Docente", "Codigo Curso"]
@@ -236,14 +239,18 @@ class ScheduleGUI(tk.Tk):
         frame.pack()
 
         entries = []
+        selection = tree.focus()
+        data = tree.item(selection)['values']
         for i, field in enumerate(fields):
             ttk.Label(frame, text=field).grid(row=i, column=0, pady=5)
             entry = ttk.Entry(frame)
             entry.grid(row=i, column=1, pady=5)
             entries.append(entry)
+            if editar:
+                entry.insert(0, data[i])
 
         ttk.Button(frame, text="Guardar",
-                   command=lambda: self.save_item(type, entries, window, tree)).grid(row=len(fields), columnspan=2)
+                   command=lambda: self.save_item(type, entries, window, tree, editar)).grid(row=len(fields), columnspan=2)
 
     def show_results(self):
         s = ttk.Style()
@@ -427,7 +434,7 @@ class ScheduleGUI(tk.Tk):
         self.pdf_exporter.export_pdf(
             self.classrooms, self.periods, self.data, self.reports)
 
-    def save_item(self, type, entries, window, tree):
+    def save_item(self, type, entries, window, tree, edit=False):
         table = {
             "Cursos": "course",
             "Salones": "classroom",
@@ -436,10 +443,17 @@ class ScheduleGUI(tk.Tk):
         }[type]
 
         fields = {
-            "Cursos": ["code", "name", "degree", "semester", "section", "optional"],
+            "Cursos": ["code", "name", "degree", "semester", "section", "optional", "classroom"],
             "Salones": ["id", "name"],
             "Docentes": ["personal_record", "name", "check_in", "check_out"],
             "Cursos que puede dar el docente": ["teacher", "course"]
+        }[type]
+
+        field = {
+            "Cursos": "code",
+            "Salones": "id",
+            "Docentes": "personal_record",
+            "Cursos que puede dar el docente": "teacher = ? AND course"
         }[type]
 
         data = list(map(lambda e: e.get(), entries))
@@ -452,21 +466,33 @@ class ScheduleGUI(tk.Tk):
 
         if type == "Cursos":
             row[5] = True if data[5] == "Opcional" else False
+            row[6] = None if not data[6].isnumeric() else int(data[6])
 
-        dd.execute(
-            f"""
-            INSERT INTO {table} ({', '.join(fields)})
-            VALUES ({', '.join('?' * len(fields))})
-            """,
-            row
-        )
+        if not edit:
+            dd.execute(
+                f"""
+                INSERT INTO {table} ({', '.join(fields)})
+                VALUES ({', '.join('?' * len(fields))})
+                """,
+                row
+            )
+            tree.insert("", 'end', values=data)
+        else:
+            selection = tree.focus()
+            values = tree.item(selection)['values']
+            dd.execute(
+                f"""
+                UPDATE {table} SET {', '.join(f"{field} = ?" for field in fields)}
+                WHERE {field} = ?
+                """,
+                row + values[:1]
+            )
+            tree.item(selection, values=data)
 
         window.destroy()
         messagebox.showinfo("Guardar", f"{type} guardado correctamente")
 
-        tree.insert("", 'end', values=data)
-
-    def edit_item(self, tree, type):
+    def toggle_active_item(self, tree, type):
         selection = tree.focus()
         if not selection:
             messagebox.showinfo(
@@ -486,7 +512,7 @@ class ScheduleGUI(tk.Tk):
         }[type]
 
         if type == "Cursos":
-            row = [data[0], True if data[6] == "Si" else False]
+            row = [data[0], True if data[7] == "Si" else False]
 
         else:
             row = [data[0], True if data[4] == "Si" else False]
@@ -496,7 +522,7 @@ class ScheduleGUI(tk.Tk):
         messagebox.showinfo("Editar", f"{type} editado correctamente")
 
         if type == "Cursos":
-            data[6] = "Inactivo" if data[6] == "Si" else "Si"
+            data[7] = "Inactivo" if data[7] == "Si" else "Si"
 
         else:
             data[4] = "Inactivo" if data[4] == "Si" else "Si"

@@ -10,7 +10,7 @@ class AlreadySelectedClassroom(Restriction):
 
     def gene_satisfies(self, gene: Gene) -> bool:
         classroom = gene.course.classroom
-        satisfied = classroom is None or classroom == gene.classroom
+        satisfied = classroom is None or classroom == gene.classroom.id
 
         gene.failed_in = set()
         if not satisfied:

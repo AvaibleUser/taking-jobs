@@ -40,13 +40,13 @@ def uniform_crossover(pair: Parents, generation: int, swap_prob: float = 0.5) ->
         (child2_id, len(genes2)))
 
     genes1_df = dd.sql(
-        "SELECT g.id FROM gene g JOIN chromosome_gene cg ON g.id = cg.gene WHERE cg.chromosome = ?",
+        "SELECT g.id FROM gene g JOIN chromosome_gene cg ON g.id = cg.gene WHERE cg.chromosome = ? ORDER BY course",
         params=[child1_id]).to_df()
     genes1 = list(Gene(id, gene.classroom, gene.course, gene.teacher, gene.period)
                   for id, gene in zip(genes1_df.id.to_list(), genes1))
 
     genes2_df = dd.sql(
-        "SELECT g.id FROM gene g JOIN chromosome_gene cg ON g.id = cg.gene WHERE cg.chromosome = ?",
+        "SELECT g.id FROM gene g JOIN chromosome_gene cg ON g.id = cg.gene WHERE cg.chromosome = ? ORDER BY course",
         params=[child2_id]).to_df()
     genes2 = list(Gene(id, gene.classroom, gene.course, gene.teacher, gene.period)
                   for id, gene in zip(genes2_df.id.to_list(), genes2))

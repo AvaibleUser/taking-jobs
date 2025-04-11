@@ -38,8 +38,7 @@ def __generate_chromosome() -> Chromosome:
     classrooms = tuple(Classroom(**row)
                        for row in classrooms_df.to_dict("records"))
 
-    courses_df = dd.sql("SELECT * FROM course WHERE active=TRUE").to_df()
-    courses_df = courses_df.sample(frac=1).reset_index(drop=True)
+    courses_df = dd.sql("SELECT * FROM course WHERE active=TRUE ORDER BY code").to_df()
     courses = tuple(Course(**row) for row in courses_df.to_dict("records"))
 
     teachers_df = dd.sql(

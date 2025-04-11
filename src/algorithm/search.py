@@ -64,7 +64,7 @@ def genetic_algorithm(
     population = generate_initial_population(
         population_size=population_size, generation_threshold=generation_threshold)
 
-    start = time.time()
+    start_method = time.time()
     while not check_termination_criteria(population, generation, generation_threshold, fitness_objective):
         population, avg_score = __genetic_algorithm_step(
             population,
@@ -80,9 +80,9 @@ def genetic_algorithm(
         conflicts.append(
             sum(map(lambda c: sum(map(lambda g: len(g.failed_in), c.genes)), population)))
 
-        progress(sum(population[-1].score,
-                 generation / generation_threshold) / 2)
-        duration += - start + (start := time.time())
+        progress((population[0].score + generation /
+                 generation_threshold) / 2)
+        duration += - start_method + (start_method := time.time())
 
     final_population = sorted(population, key=lambda c: c.score, reverse=True)
     consecutive = sum(map(lambda g: int(

@@ -13,7 +13,7 @@ from domain.models.restrictions import (AlreadySelectedClassroom,
 from domain.utils.genetic import Population
 
 __LIGHT_WEIGHT = 1
-__HEAVY_WEIGHT = 5
+__HEAVY_WEIGHT = 10
 __first: bool = True
 __restrictions: int = 0
 __priorities: int = 0
