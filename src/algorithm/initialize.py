@@ -1,3 +1,4 @@
+from concurrent.futures import ThreadPoolExecutor as Pool
 from random import choice
 
 import duckdb as dd
@@ -33,15 +34,17 @@ def generation_threshold() -> int:
     return __generation_threshold
 
 
-def __generate_chromosome() -> Chromosome:
-    classrooms_df = dd.sql("SELECT * FROM classroom").to_df()
+def __generate_chromosome(_: int) -> Chromosome:
+    con = dd.cursor()
+    classrooms_df = con.sql("SELECT * FROM classroom").to_df()
     classrooms = tuple(Classroom(**row)
                        for row in classrooms_df.to_dict("records"))
 
-    courses_df = dd.sql("SELECT * FROM course WHERE active=TRUE ORDER BY code").to_df()
+    courses_df = con.sql(
+        "SELECT * FROM course WHERE active=TRUE ORDER BY code").to_df()
     courses = tuple(Course(**row) for row in courses_df.to_dict("records"))
 
-    teachers_df = dd.sql(
+    teachers_df = con.sql(
         """
         SELECT t.*, tca.course AS available_courses
         FROM teacher t
@@ -55,30 +58,14 @@ def __generate_chromosome() -> Chromosome:
 
     periods = tuple(Period)
 
-    dd.execute("INSERT INTO chromosome (generation) VALUES (0)")
-    chromosome_id = dd.sql("SELECT MAX(id) FROM chromosome").fetchall()[0][0]
-
-    dd.executemany(
-        "INSERT INTO gene (classroom, course, teacher, period) VALUES (?, ?, ?, ?)",
-        ((choice(classrooms).id, c.code, choice(teachers).personal_record, choice(periods)) for c in courses))
-
-    dd.execute(
-        "INSERT INTO chromosome_gene SELECT ? AS chromosome, id AS gene FROM gene g ORDER BY id DESC LIMIT ?",
-        (chromosome_id, len(courses)))
-
-    genes_df = dd.sql(
-        "SELECT g.* FROM gene g JOIN chromosome_gene cg ON g.id = cg.gene WHERE cg.chromosome = ?",
-        params=[chromosome_id]).to_df()
     genes = list(Gene(
-        id=row["id"],
-        classroom=next(filter(lambda c: c.id == row["classroom"], classrooms)),
-        course=next(filter(lambda c: c.code == row["course"], courses)),
-        teacher=next(filter(lambda t: t.personal_record ==
-                     row["teacher"], teachers)),
-        period=next(filter(lambda p: p == row["period"], periods))
-    ) for row in genes_df.to_dict("records"))
+        classroom=choice(classrooms),
+        course=course,
+        teacher=choice(teachers),
+        period=choice(periods)
+    ) for course in courses)
 
-    return Chromosome(id=chromosome_id, generation=0, genes=genes)
+    return Chromosome(generation=0, genes=genes)
 
 
 def generate_initial_population(
@@ -86,7 +73,6 @@ def generate_initial_population(
         crossover_rate: float = crossover_rate(),
         mutation_rate: float = mutation_rate(),
         generation_threshold: int = generation_threshold()) -> Population:
-    dd.begin()
 
     global __population_size
     __population_size = population_size
@@ -104,11 +90,8 @@ def generate_initial_population(
     __chromosome_len = dd.sql(
         "SELECT COUNT(*) FROM course WHERE active=TRUE").fetchall()[0][0]
 
-    dd.execute("DELETE FROM chromosome WHERE 1=1")
-    dd.execute("DELETE FROM gene WHERE 1=1")
-
-    population = list(__generate_chromosome() for _ in range(population_size))
-
-    dd.commit()
+    with Pool() as pool:
+        population = list(
+            pool.map(__generate_chromosome, range(population_size)))
 
     return population

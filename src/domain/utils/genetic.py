@@ -19,6 +19,6 @@ class Parents:
     parent2: Chromosome = field()
 
 
-CrossoverMethod = Callable[[Parents], Population]
+CrossoverMethod = Callable[[Parents, int], Population]
 
 MutateMethod = Callable[[Chromosome], None]

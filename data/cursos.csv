@@ -1,16 +1,16 @@
 Nombre,Código,Carrera,Semestre,Seccion,Tipo
 Programación Avanzada,1,ingenieria en ciencias y sistemas,5,A,obligatorio
-Termodinámica,2,Ingenieria mecanica,3,B,obligatorio
+Termodinámica,2,Ingenieria mecanica,1,B,obligatorio
 Gestión de Proyectos,3,Ingenieria industrial,7,C,optativo
-Dibujo Técnico,4,Ingenieria civil,2,D,obligatorio
+Dibujo Técnico,4,Ingenieria civil,3,D,obligatorio
 Mecánica de Fluidos,5,Ingenieria mecanica industrial,4,E,obligatorio
-Inteligencia Artificial,6,ingenieria en ciencias y sistemas,6,F,optativo
+Inteligencia Artificial,6,ingenieria en ciencias y sistemas,5,F,optativo
 Control de Calidad,7,Ingenieria industrial,8,A,obligatorio
-Estructuras Metálicas,8,Ingenieria civil,5,B,obligatorio
-Robótica Industrial,9,Ingenieria mecanica industrial,7,C,optativo
+Estructuras Metálicas,8,Ingenieria civil,3,B,obligatorio
+Robótica Industrial,9,Ingenieria mecanica industrial,4,C,optativo
 Química General,10,Ingenieria mecanica,1,D,obligatorio
-Diseño UX,11,ingenieria en ciencias y sistemas,9,E,optativo
+Diseño UX,11,ingenieria en ciencias y sistemas,5,E,optativo
 Logística Integral,12,Ingenieria industrial,6,F,obligatorio
 Cálculo Vectorial,13,Ingenieria civil,3,A,obligatorio
 Electrónica Digital,14,Ingenieria mecanica industrial,4,B,optativo
-Machine Learning,15,ingenieria en ciencias y sistemas,10,C,optativo
+Machine Learning,15,ingenieria en ciencias y sistemas,5,C,optativo

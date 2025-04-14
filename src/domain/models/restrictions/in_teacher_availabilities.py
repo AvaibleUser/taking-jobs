@@ -1,13 +1,11 @@
-from attrs import field, frozen
+from attrs import frozen
 
-from domain.dtos import Chromosome, Gene
+from domain.dtos import Gene
 from domain.models import Restriction
 
 
 @frozen
 class InTeacherAvailabilities(Restriction):
-    chromosome: Chromosome = field()
-
     def gene_satisfies(self, gene: Gene) -> bool:
         satisfied = gene.course.code in gene.teacher.available_courses
 

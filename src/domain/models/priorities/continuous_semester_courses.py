@@ -1,34 +1,28 @@
-from typing import Set
+from collections import defaultdict
+from typing import Dict, Set
 
 from attrs import field, frozen
 
-from domain.dtos import Chromosome, Gene
+from domain.dtos import Gene
 from domain.models import Priority
 
 
 @frozen
 class ContinuousSemesterCourses(Priority):
-    chromosome: Chromosome = field()
-    genes_store: Set[int] = field(factory=set)
+    genes_store: Dict[int, Set[int]] = field(factory=lambda: defaultdict(set))
 
     def gene_satisfies(self, gene: Gene) -> bool:
         degree = gene.course.degree
         semester = gene.course.semester
-        continuous_periods = {gene.period + 1, gene.period - 1}
+        period = gene.period
+        actual_course_hash = hash((degree, semester))
+        store = self.genes_store[actual_course_hash]
 
-        genes = self.chromosome.genes
-        genes = filter(lambda g: g.course.degree == degree, genes)
-        genes = list(filter(lambda g: g.course.semester == semester, genes))
-
-        possible_continuous_courses = len(genes)
-        if possible_continuous_courses < 2:
-            return True
-
-        genes = filter(lambda g: g.period in continuous_periods, genes)
-
-        satisfied = len(list(genes)) > 0
-
+        satisfied = period + 1 in store or period - 1 in store
         if not satisfied:
             gene.failed_in.add(self.__class__.__name__)
+
+        if period not in store:
+            store.add(period)
 
         return satisfied

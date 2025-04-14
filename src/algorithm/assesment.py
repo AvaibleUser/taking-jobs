@@ -1,3 +1,4 @@
+from concurrent.futures import ThreadPoolExecutor as Pool
 from typing import List
 
 from domain.dtos import Chromosome
@@ -14,32 +15,24 @@ from domain.utils.genetic import Population
 
 __LIGHT_WEIGHT = 1
 __HEAVY_WEIGHT = 10
-__first: bool = True
-__restrictions: int = 0
-__priorities: int = 0
 
 
-def __calculate_fitness_score(chromosome: Chromosome) -> float:
+def __calculate_fitness_score(chromosome: Chromosome) -> Chromosome:
+    if chromosome.score is not None:
+        return chromosome.score
+
     restrictions: List[Restriction] = [
-        AlreadySelectedClassroom(chromosome),
-        BetweenValidPeriods(chromosome),
-        InTeacherAvailabilities(chromosome),
-        InTeacherSchedule(chromosome),
-        NonOverlappingClassrooms(chromosome),
-        NonOverlappingSemesterCourses(chromosome),
-        NonOverlappingTeacherSchedule(chromosome),
+        AlreadySelectedClassroom(),
+        BetweenValidPeriods(),
+        InTeacherAvailabilities(),
+        InTeacherSchedule(),
+        NonOverlappingClassrooms(),
+        NonOverlappingSemesterCourses(),
+        NonOverlappingTeacherSchedule(),
     ]
     priorities: List[Priority] = [
-        ContinuousSemesterCourses(chromosome),
+        ContinuousSemesterCourses(),
     ]
-
-    global __first
-    if __first:
-        __first = False
-        global __restrictions
-        global __priorities
-        __restrictions = len(restrictions)
-        __priorities = len(priorities)
 
     genes = chromosome.genes
 
@@ -60,17 +53,25 @@ def __calculate_fitness_score(chromosome: Chromosome) -> float:
 
 
 def fitness(population: Population) -> float:
-    global __first
-    __first = True
-
-    avg_score = sum(map(__calculate_fitness_score,
+    with Pool() as pool:
+        avg_score = sum(pool.map(__calculate_fitness_score,
                         population)) / len(population)
+
     return avg_score
 
 
-def check_termination_criteria(population: Population, generation: int, generation_threshold: int, fitness_objective: float) -> bool:
-    if generation > generation_threshold:
-        return True
+def check_termination_criteria(
+    population: Population,
+    generation: int,
+    generation_threshold: int,
+    fitness_objective: float,
+) -> tuple[bool, float]:
+    avg_score = fitness(population)
 
-    fitness(population)
-    return any(map(lambda c: c.score >= 1 or (c.generation + 25 > generation and c.score >= fitness_objective), population))
+    if generation > generation_threshold:
+        return True, avg_score
+
+    stop = any(map(lambda c: c.score >= 0.9975 or (c.generation + 25 >
+               generation and c.score >= fitness_objective), population))
+
+    return stop, avg_score

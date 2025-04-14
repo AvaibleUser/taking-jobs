@@ -56,38 +56,38 @@ def __config_duckdb() -> None:
         )
         """)
 
-    dd.execute("""
-        CREATE SEQUENCE ch_id START 1;
-        CREATE TABLE chromosome (
-            id INTEGER DEFAULT NEXTVAL('ch_id'),
-            generation INTEGER NOT NULL,
-            score REAL,
-            active BOOLEAN DEFAULT TRUE,
-            parent1 INTEGER NULL,
-            parent2 INTEGER NULL,
-            PRIMARY KEY (id)
-        )
-        """)
+    # dd.execute("""
+    #     CREATE SEQUENCE ch_id START 1;
+    #     CREATE TABLE chromosome (
+    #         id INTEGER DEFAULT NEXTVAL('ch_id'),
+    #         generation INTEGER NOT NULL,
+    #         score REAL,
+    #         active BOOLEAN DEFAULT TRUE,
+    #         parent1 INTEGER NULL,
+    #         parent2 INTEGER NULL,
+    #         PRIMARY KEY (id)
+    #     )
+    #     """)
 
-    dd.execute("""
-        CREATE SEQUENCE ge_id START 1;
-        CREATE TABLE gene (
-            id INTEGER DEFAULT NEXTVAL('ge_id'),
-            classroom INTEGER,
-            course INTEGER,
-            teacher INTEGER,
-            period INTEGER NOT NULL CHECK (period BETWEEN 1 AND 10),
-            PRIMARY KEY (id)
-        )
-        """)
+    # dd.execute("""
+    #     CREATE SEQUENCE ge_id START 1;
+    #     CREATE TABLE gene (
+    #         id INTEGER DEFAULT NEXTVAL('ge_id'),
+    #         classroom INTEGER,
+    #         course INTEGER,
+    #         teacher INTEGER,
+    #         period INTEGER NOT NULL CHECK (period BETWEEN 1 AND 10),
+    #         PRIMARY KEY (id)
+    #     )
+    #     """)
 
-    dd.execute("""
-        CREATE TABLE chromosome_gene (
-            chromosome INTEGER,
-            gene INTEGER,
-            PRIMARY KEY (chromosome, gene)
-        )
-        """)
+    # dd.execute("""
+    #     CREATE TABLE chromosome_gene (
+    #         chromosome INTEGER,
+    #         gene INTEGER,
+    #         PRIMARY KEY (chromosome, gene)
+    #     )
+    #     """)
 
 
 def __config_classrooms() -> None:

@@ -12,7 +12,7 @@ def select_elites_ranked(population: Population, percent: float = 0.05) -> Popul
     return ranked[:int(len(population) * percent)]
 
 
-def select_parents(population: Population, pool_size: int, average_score: float) -> Population:
+def select_parents(population: Population, pool_size: int) -> Population:
     min_score = min(*map(lambda c: c.score, population))
     # probs = tuple(pool.map(lambda c: c.score %
     #               (2 if c.score >= (average_score * 2) else c.score + 1) - min_score, population))
