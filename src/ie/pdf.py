@@ -5,7 +5,7 @@ from fpdf import FPDF
 from matplotlib import pyplot as plt
 
 
-class PDF(FPDF):
+class PDFExport(FPDF):
     def header(self):
         self.set_font('Arial', 'B', 16)
         self.cell(0, 10, 'Reporte de Horarios Generados', 0, 1, 'C')
@@ -22,30 +22,8 @@ class PDF(FPDF):
         self.data = data
         self.reports = reports
 
-        pdf = PDF(orientation='L')
-        pdf.add_page()
-        pdf.set_auto_page_break(auto=True, margin=15)
-
+        pdf = PDFExport(orientation='L')
         title_style = {'family': 'Arial', 'style': 'B', 'size': 12}
-
-        pdf.set_font(**title_style)
-        pdf.cell(0, 10, 'Distribución de Horarios', 0, 1)
-
-        col_widths = [30] + [40 for _ in self.classrooms]
-
-        pdf.set_fill_color(200, 220, 255)
-        columns = ["Hora"] + self.classrooms
-        for i, col in enumerate(columns):
-            pdf.cell(col_widths[i], 10, col, border=1, align='C')
-        pdf.ln()
-
-        pdf.set_fill_color(255, 255, 255)
-        for i, period in enumerate(self.periods):
-            pdf.multi_cell(col_widths[0], 10, period, border=1, align='C')
-            for j, cl in enumerate(self.classrooms):
-                pdf.multi_cell(
-                    col_widths[j], 10, self.data[i + 1][cl], border=1, align='C')
-            pdf.ln()
 
         pdf.add_page()
         self._agregar_grafica_pdf(pdf, self.reports.conflicts_per_generation,
@@ -73,6 +51,27 @@ class PDF(FPDF):
         for titulo, valor in parsed_data:
             pdf.cell(100, 10, titulo, border=0)
             pdf.cell(0, 10, valor, border=0)
+            pdf.ln()
+
+        pdf.add_page()
+        pdf.set_auto_page_break(auto=True, margin=15)
+        pdf.set_font(**title_style)
+        pdf.cell(0, 10, 'Distribución de Horarios', 0, 1)
+
+        col_widths = [30] + [40 for _ in self.classrooms]
+
+        pdf.set_fill_color(200, 220, 255)
+        columns = ["Hora"] + self.classrooms
+        for i, col in enumerate(columns):
+            pdf.cell(col_widths[i], 10, col, border=1, align='C')
+        pdf.ln()
+
+        pdf.set_fill_color(255, 255, 255)
+        for i, period in enumerate(self.periods):
+            pdf.multi_cell(col_widths[0], 10, period, border=1, align='C')
+            for j, cl in enumerate(self.classrooms):
+                pdf.multi_cell(
+                    col_widths[j], 10, self.data[i + 1][cl], border=1, align='C')
             pdf.ln()
 
         filepath = filedialog.asksaveasfilename(
