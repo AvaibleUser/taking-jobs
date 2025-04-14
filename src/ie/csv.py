@@ -62,6 +62,8 @@ def __fill_required_columns(df: pd.DataFrame, cols: dict, cols_rename: list[str]
     for i, (col, value) in enumerate(inserts):
         df.insert(i + actual_cols, col, value)
 
+    return df
+
 
 @importer
 def import_courses_csv(df: pd.DataFrame) -> None:
@@ -70,14 +72,17 @@ def import_courses_csv(df: pd.DataFrame) -> None:
             df.columns[0]: "name",
             df.columns[1]: "code",
         }
-        rename_dict = {
+        new_rename_dict = {
             df.columns[2]: "degree",
             df.columns[3]: "semester",
             df.columns[4]: "section",
             df.columns[5]: "optional"
-        } + rename_dict
-        __fill_required_columns(
-            df, cols + rename_dict, ["code", "name"] + rename_dict.values(), inserts)
+        }
+        new_rename_dict.update(rename_dict)
+        cols.update(new_rename_dict)
+
+        df = __fill_required_columns(
+            df, cols, ["code", "name"] + list(new_rename_dict.values()), inserts)
 
         if df.optional.dtype != "bool":
             df.loc[df.optional.eq("optativo"), "optional"] = True
@@ -87,7 +92,7 @@ def import_courses_csv(df: pd.DataFrame) -> None:
             dd.sql("SELECT * FROM df").insert_into("course")
             messagebox.showinfo(
                 "Importar", "Cursos importados correctamente")
-        except Exception as e:
+        except Exception:
             messagebox.showinfo(
                 "Importar", "Se esperaba 6, 7 u 8 columnas\nCon el orden: name, code, degree, semester, section, optional[, classroom[, active]]")
 
@@ -116,14 +121,15 @@ def import_classrooms_csv(df: pd.DataFrame) -> None:
             df.columns[0]: "name",
             df.columns[1]: "id",
         }
-        __fill_required_columns(df, cols + rename_dict,
-                                ["id", "name"] + rename_dict.values(), inserts)
+        cols.update(rename_dict)
+        df = __fill_required_columns(
+            df, cols, ["id", "name"] + list(rename_dict.values()), inserts)
 
         try:
             dd.sql("SELECT * FROM df").insert_into("classroom")
             messagebox.showinfo(
                 "Importar", "Salones importados correctamente")
-        except Exception as e:
+        except Exception:
             messagebox.showinfo(
                 "Importar", "Se esperaba 2 o 3 columnas\nCon el orden: name, id[, capacity]")
 
@@ -146,12 +152,14 @@ def import_teachers_csv(df: pd.DataFrame) -> None:
             df.columns[0]: "name",
             df.columns[1]: "personal_record",
         }
-        rename_dict = {
+        new_rename_dict = {
             df.columns[2]: "check_in",
             df.columns[3]: "check_out"
-        } + rename_dict
-        __fill_required_columns(
-            df, cols + rename_dict, ["personal_record", "name"] + rename_dict.values(), inserts)
+        }
+        new_rename_dict.update(rename_dict)
+        cols.update(new_rename_dict)
+        df = __fill_required_columns(
+            df, cols, ["personal_record", "name"] + list(new_rename_dict.values()), inserts)
 
         if df.check_in.dtype != "int":
             df.check_in = df.check_in.apply(Period.to_check_in)
@@ -163,7 +171,7 @@ def import_teachers_csv(df: pd.DataFrame) -> None:
             dd.sql("SELECT * FROM df").insert_into("teacher")
             messagebox.showinfo(
                 "Importar", "Docentes importados correctamente")
-        except Exception as e:
+        except Exception:
             messagebox.showinfo(
                 "Importar", "Se esperaba 4 o 5 columnas\nCon el orden: name, personal_record, check_in, check_out[, active]")
 
@@ -186,8 +194,8 @@ def import_relations_csv(df: pd.DataFrame) -> None:
             df.columns[0]: "teacher",
             df.columns[1]: "course",
         }
-        __fill_required_columns(
-            df, cols, ["teacher", "course"] + rename_dict.values(), inserts)
+        df = __fill_required_columns(
+            df, cols, ["teacher", "course"] + list(rename_dict.values()), inserts)
 
         try:
             dd.sql("SELECT * FROM df").insert_into("teacher_course_available")

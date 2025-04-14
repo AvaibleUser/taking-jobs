@@ -9,9 +9,9 @@ def config() -> dd.DuckDBPyConnection:
 
     __config_duckdb()
     __config_classrooms()
-    __config_courses()
-    __config_teachers()
-    __config_teacher_courses()
+    # __config_courses()
+    # __config_teachers()
+    # __config_teacher_courses()
 
     return con
 

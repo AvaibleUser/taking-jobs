@@ -1,6 +1,6 @@
 from concurrent.futures import ThreadPoolExecutor as Pool
 from functools import partial
-from random import randint, sample
+from random import choice, sample
 
 from domain.dtos import Chromosome, Gene
 from domain.utils.genetic import CrossoverMethod, Population
@@ -15,7 +15,7 @@ def mutate_by_inversion(chromosome: Chromosome, generation: int, inversion_rate:
         x = Gene(x.classroom, x.course, x.teacher, x.period)
         y = Gene(y.classroom, y.course, y.teacher, y.period)
 
-        attr_to_invert = randint(0, 2)
+        attr_to_invert = choice(range(3))
 
         match attr_to_invert:
             case 0:

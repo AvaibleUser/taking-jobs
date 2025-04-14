@@ -64,9 +64,9 @@ class DataManagementGUI:
 
         buttons_frame = ttk.Frame(window)
         ttk.Button(buttons_frame, text="Importar CSV",
-                   command=partial(self.import_csv, title=notebook.tab(notebook.select(), "text"))).pack(side=tk.LEFT, padx=5)
+                   command=partial(self.import_csv, notebook=notebook)).pack(side=tk.LEFT, padx=5)
         ttk.Button(buttons_frame, text="Exportar CSV",
-                   command=partial(self.export_csv, title=notebook.tab(notebook.select(), "text"))).pack(side=tk.LEFT, padx=5)
+                   command=partial(self.export_csv, notebook=notebook)).pack(side=tk.LEFT, padx=5)
         buttons_frame.pack(pady=10)
 
     def create_table_management(self, parent, title, columns, data, with_toggle=True, with_edit=True):
@@ -132,7 +132,8 @@ class DataManagementGUI:
         ttk.Button(frame, text="Guardar",
                    command=lambda: self.save_item(type, entries, window, tree, editar)).grid(row=len(fields), columnspan=2)
 
-    def import_csv(self, title: str):
+    def import_csv(self, notebook):
+        title = notebook.tab(notebook.select(), "text")
         {
             "Cursos": import_courses_csv,
             "Salones": import_classrooms_csv,
@@ -140,7 +141,8 @@ class DataManagementGUI:
             "Relaciones": import_relations_csv
         }[title]()
 
-    def export_csv(self, title: str):
+    def export_csv(self, notebook):
+        title = notebook.tab(notebook.select(), "text")
         {
             "Cursos": export_courses_csv,
             "Salones": export_classrooms_csv,
